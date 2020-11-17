@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+  <!--
+      @file Menu for accessing sleep diary tools
+      @author Andrew Sayers (andrew-github.com@pileofstuff.org)
+      @copyright 2020
+      @license AGPLv3
+    -->
+  <head>
+    <meta charset="utf-8">
+    <link href="//fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="//cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="//cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <title>Sleep diary - menu</title>
+  </head>
+  <body style="background:black;opacity:0">
+
+
+    <div id="app-container">
+      <v-app>
+        <v-main>
+          <v-container style="max-width:600px">
+
+            <v-tabs height="0">
+              <v-tabs-items v-model="tab">
+
+                <!-- Main menu -->
+                <v-tab-item>
+                  <v-list>
+
+                    <v-list-item href="../logger/">
+                      <v-list-item-icon>
+                        <v-icon>mdi-plus</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Logger</v-list-item-title>
+                        <v-list-item-subtitle>Log your wake and sleep times</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item @click="set_tab(1)">
+                      <v-list-item-icon>
+                        <v-icon>mdi-playlist-edit</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Editor</v-list-item-title>
+                        <v-list-item-subtitle>Add, remove and modify entries</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item @click="set_tab(2)">
+                      <v-list-item-icon>
+                        <v-icon>mdi-download</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Manage your data</v-list-item-title>
+                        <v-list-item-subtitle>Upload and download</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </v-list-item>
+
+                    <v-subheader inset>Graphs and stats</v-subheader>
+                    <v-dialog
+                      v-model="calendar_dialog"
+                      fullscreen
+                      hide-overlay
+                      transition="dialog-bottom-transition"
+                      >
+                      <v-toolbar>
+                        <v-toolbar-items>
+                          <v-btn
+                            icon
+                            @click="$refs.calendar.prev()"
+                            >
+                            <v-icon>mdi-chevron-left</v-icon>
+                          </v-btn>
+                        </v-toolbar-items>
+                        <v-toolbar-title>Calendar</v-toolbar-title>
+                        <v-spacer></v-spacer>
+                        <v-toolbar-items>
+                          <v-btn
+                            icon
+                            @click="$refs.calendar.next()"
+                            >
+                            <v-icon>mdi-chevron-right</v-icon>
+                          </v-btn>
+                          <v-btn icon @click="calendar_dialog = false">
+                            <v-icon>mdi-close</v-icon>
+                          </v-btn>
+                        </v-toolbar-items>
+                      </v-toolbar>
+                      <v-calendar
+                        v-if="calendar_dialog"
+                        v-model="calendar_value"
+                        ref="calendar"
+                        color="primary"
+                        type="week"
+                        event-overlap-mode="stack"
+                        :events="calendar_events"
+                        :event-overlap-threshold="30"
+                        event-color="#32a"
+                        @change="calendar_change"
+                        ></v-calendar>
+                    </v-dialog>
+                    <v-list-item @click="calendar_dialog=true">
+                      <v-list-item-icon>
+                        <v-icon>mdi-calendar-text</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Sleep calendar</v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+
+                    <v-subheader inset>Settings</v-subheader>
+
+                    <v-dialog
+                      v-model="online_backup_dialog"
+                      max-width="600px"
+                      >
+                      <v-card>
+                        <v-card-title>
+                          <span class="headline">Online backup</span>
+                        </v-card-title>
+                        <v-card-text>
+                          <v-text-field
+                            label="Address"
+                            placeholder="https://www.example.com/?diary="
+                            v-model="server_url"
+                            ></v-text-field>
+                          <v-alert
+                            class="mt-2"
+                            dense
+                            outlined
+                            type="warning"
+                            >
+                            <strong>Protect your privacy</strong>: this&nbsp;server&nbsp;will&nbsp;know when&nbsp;you&nbsp;wake&nbsp;up and go&nbsp;to&nbsp;sleep
+                          </v-alert>
+                        </v-card-text>
+                        <v-card-actions>
+                          <v-spacer></v-spacer>
+                          <v-btn
+                            text
+                            @click="online_backup_cancel"
+                            >
+                            Cancel
+                          </v-btn>
+                          <v-btn
+                            color="primary"
+                            @click="online_backup_ok"
+                            >
+                            OK
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+
+                    <v-list-item @click="online_backup_click">
+                      <v-list-item-icon>
+                        <v-icon>mdi-cloud-upload-outline</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Online backup</v-list-item-title>
+                        <v-list-item-subtitle>Send events to a server</v-list-item-subtitle>
+                      </v-list-item-content>
+                      <v-list-item-action>
+                        <v-switch v-model="server_active" @click.stop="online_backup_switch"></v-switch>
+                      </v-list-item-action>
+                    </v-list-item>
+
+                    <v-dialog
+                      v-model="sleep_planning_dialog"
+                      max-width="600px"
+                      >
+                      <v-card>
+                        <v-card-title>
+                          <span class="headline">Sleep planning</span>
+                        </v-card-title>
+                        <v-card-text>
+                          <v-menu
+                            ref="sleep_planning_date_menu"
+                            :close-on-content-click="false"
+                            :return-value.sync="sleep_planning_date"
+                            transition="scale-transition"
+                            offset-y
+                            max-width="290px"
+                            min-width="290px"
+                            >
+                            <template v-slot:activator="{ on, attrs }">
+                              <v-text-field
+                                v-model="sleep_planning_date"
+                                label="What day are you aiming for?"
+                                readonly
+                                v-bind="attrs"
+                                v-on="on"
+                                ></v-text-field>
+                            </template>
+                            <v-date-picker
+                              v-model="sleep_planning_date"
+                              no-title
+                              @change="$refs.sleep_planning_date_menu.save(sleep_planning_date)"
+                              >
+                            </v-date-picker>
+                          </v-menu>
+                          <v-menu
+                            ref="sleep_planning_time_menu"
+                            v-model="sleep_planning_time_menu"
+                            :close-on-content-click="false"
+                            :return-value.sync="sleep_planning_time"
+                            transition="scale-transition"
+                            offset-y
+                            max-width="290px"
+                            min-width="290px"
+                            >
+                            <template v-slot:activator="{ on, attrs }">
+                              <v-text-field
+                                v-model="sleep_planning_time"
+                                label="What time do you want to wake up on that day?"
+                                readonly
+                                v-bind="attrs"
+                                v-on="on"
+                                ></v-text-field>
+                            </template>
+                            <v-time-picker
+                              v-if="sleep_planning_time_menu"
+                              v-model="sleep_planning_time"
+                              no-title
+                              full-width
+                              @click:minute="$refs.sleep_planning_time_menu.save(sleep_planning_time)"
+                              >
+                            </v-time-picker>
+                          </v-menu>
+                          <v-text-field
+                            label="What is your target day length?"
+                            v-model="sleep_planning_day_length"
+                            :rules="[v=>/^[1-9][0-9]*:[0-5]?[0-9]$/.test(v)]"
+                            ></v-text-field>
+                        </v-card-text>
+                        <v-card-actions>
+                          <v-spacer></v-spacer>
+                          <v-btn
+                            text
+                            @click="sleep_planning_cancel"
+                            >
+                            Cancel
+                          </v-btn>
+                          <v-btn
+                            color="primary"
+                            @click="sleep_planning_ok"
+                            >
+                            OK
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+
+                    <v-list-item @click="sleep_planning_dialog=true">
+                      <v-list-item-icon>
+                        <v-icon>mdi-calendar-edit</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Sleep planning</v-list-item-title>
+                        <v-list-item-subtitle>Aim to wake up at a future day and time</v-list-item-subtitle>
+                      </v-list-item-content>
+                      <v-list-item-action>
+                        <v-switch v-model="target_active" @click.stop="sleep_planning_switch"></v-switch>
+                      </v-list-item-action>
+                    </v-list-item>
+
+                    <v-list-item @click="set_tab(3)">
+                      <v-list-item-icon>
+                        <v-icon>mdi-information-variant</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>About</v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+
+                  </v-list>
+                </v-tab-item>
+
+                <!-- "Editor" menu -->
+                <v-tab-item>
+                  <v-toolbar flat>
+                    <v-btn icon @click.stop="reset_tab">
+                      <v-icon>mdi-arrow-left</v-icon>
+                    </v-btn>
+                    <v-toolbar-title>Editor</v-toolbar-title>
+                  </v-toolbar>
+
+                  <v-dialog
+                    v-model="editor_dialog"
+                    max-width="600px"
+                    >
+                    <v-card>
+                      <v-card-title>
+                        <span class="headline">{{editor_dialog_entry?"Edit":"New"}} Entry</span>
+                      </v-card-title>
+                      <v-card-text>
+                        <v-container>
+                          <v-row>
+                            <v-col cols="12">
+                              <v-select
+                                v-model="editor_dialog_event"
+                                :items="editor_dialog_options"
+                                menu-props="auto"
+                                label="Event"
+                                hide-details
+                                single-line
+                                required
+                                >
+                                <template v-slot:item="{ item, on, attrs }">
+                                  <v-list-item
+                                    v-bind="attrs"
+                                    v-on="on"
+                                    >
+                                    <v-list-item-icon v-if="item.icon"><v-icon>{{item.icon}}</v-icon></v-list-item-icon>
+                                    <v-list-item-content>{{item.text}}</v-list-item-content>
+                                  </v-list-item>
+                                </template>
+                              </v-select>
+                            </v-col>
+
+                            <v-col
+                              v-if="editor_dialog_event == diary.event_string_to_id.RETARGET"
+                              cols="12"
+                              >
+                              <v-checkbox
+                                v-model="editor_dialog_has_related"
+                                label="Set the related time"
+                                hide-details
+                                ></v-checkbox>
+                            </v-col>
+                            <v-col
+                              v-if="editor_dialog_event == diary.event_string_to_id.RETARGET && editor_dialog_has_related"
+                              cols="12"
+                              sm="6"
+                              >
+                              <v-menu
+                                ref="editor_dialog_related_date_menu"
+                                :close-on-content-click="false"
+                                :return-value.sync="editor_dialog_related_date"
+                                transition="scale-transition"
+                                offset-y
+                                max-width="290px"
+                                min-width="290px"
+                                >
+                                <template v-slot:activator="{ on, attrs }">
+                                  <v-text-field
+                                    v-model="editor_dialog_related_date"
+                                    label="Target date"
+                                    readonly
+                                    v-bind="attrs"
+                                    v-on="on"
+                                    ></v-text-field>
+                                </template>
+                                <v-date-picker
+                                  v-model="editor_dialog_related_date"
+                                  no-title
+                                  @change="$refs.editor_dialog_related_date_menu.save(editor_dialog_related_date)"
+                                  >
+                                </v-date-picker>
+                              </v-menu>
+                            </v-col>
+                            <v-col
+                              v-if="editor_dialog_event == diary.event_string_to_id.RETARGET && editor_dialog_has_related"
+                              cols="12"
+                              sm="6"
+                              >
+                              <v-menu
+                                ref="editor_dialog_related_time_menu"
+                                v-model="editor_dialog_related_time_visible"
+                                :close-on-content-click="false"
+                                :return-value.sync="editor_dialog_related_time"
+                                transition="scale-transition"
+                                offset-y
+                                max-width="290px"
+                                min-width="290px"
+                                >
+                                <template v-slot:activator="{ on, attrs }">
+                                  <v-text-field
+                                    v-model="editor_dialog_related_time"
+                                    label="Target time"
+                                    readonly
+                                    v-bind="attrs"
+                                    v-on="on"
+                                    ></v-text-field>
+                                </template>
+                                <v-time-picker
+                                  v-if="editor_dialog_related_time_visible"
+                                  v-model="editor_dialog_related_time"
+                                  no-title
+                                  @change="$refs.editor_dialog_related_time_menu.save(editor_dialog_related_time)"
+                                  >
+                                </v-time-picker>
+                              </v-menu>
+                            </v-col>
+
+                            <v-col
+                              cols="12"
+                              sm="6"
+                              >
+                              <v-menu
+                                ref="editor_dialog_date_menu"
+                                :close-on-content-click="false"
+                                :return-value.sync="editor_dialog_date"
+                                transition="scale-transition"
+                                offset-y
+                                max-width="290px"
+                                min-width="290px"
+                                >
+                                <template v-slot:activator="{ on, attrs }">
+                                  <v-text-field
+                                    v-model="editor_dialog_date"
+                                    label="Event date"
+                                    readonly
+                                    v-bind="attrs"
+                                    v-on="on"
+                                    ></v-text-field>
+                                </template>
+                                <v-date-picker
+                                  v-model="editor_dialog_date"
+                                  no-title
+                                  @change="$refs.editor_dialog_date_menu.save(editor_dialog_date)"
+                                  >
+                                </v-date-picker>
+                              </v-menu>
+                            </v-col>
+                            <v-col
+                              cols="12"
+                              sm="6"
+                              >
+                              <v-menu
+                                ref="editor_dialog_time_menu"
+                                v-model="editor_dialog_time_visible"
+                                :close-on-content-click="false"
+                                :return-value.sync="editor_dialog_time"
+                                transition="scale-transition"
+                                offset-y
+                                max-width="290px"
+                                min-width="290px"
+                                >
+                                <template v-slot:activator="{ on, attrs }">
+                                  <v-text-field
+                                    v-model="editor_dialog_time"
+                                    label="Event time"
+                                    readonly
+                                    v-bind="attrs"
+                                    v-on="on"
+                                    ></v-text-field>
+                                </template>
+                                <v-time-picker
+                                  v-if="editor_dialog_time_visible"
+                                  v-model="editor_dialog_time"
+                                  no-title
+                                  @change="$refs.editor_dialog_time_menu.save(editor_dialog_time)"
+                                  >
+                                </v-time-picker>
+                              </v-menu>
+                            </v-col>
+                            <v-col cols="12">
+                              <v-text-field
+                                v-model="editor_dialog_comment"
+                                label="Comment"
+                                ></v-text-field>
+                            </v-col>
+                          </v-row>
+                        </v-container>
+                        <v-alert
+                          v-if="editor_error"
+                          dense
+                          outlined
+                          type="warning"
+                          >
+                          Could not contact server.  Please try again later.
+                        </v-alert>
+                      </v-card-text>
+                      <v-card-actions>
+                        <v-btn
+                          v-if="editor_dialog_entry"
+                          text
+                          :loading="editor_loading==1"
+                          :disabled="!!editor_loading"
+                          @click="editor_delete"
+                          >
+                          <v-icon>mdi-delete</v-icon>
+                          Delete entry
+                        </v-btn>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          text
+                          :loading="editor_loading==2"
+                          :disabled="!!editor_loading"
+                          @click="editor_cancel"
+                          >
+                          Cancel
+                        </v-btn>
+                        <v-btn
+                          :loading="editor_loading==3"
+                          :disabled="!!editor_loading"
+                          color="primary"
+                          @click="editor_ok"
+                          >
+                          OK
+                        </v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+
+                  <v-list>
+                    <v-list-item @click="editor_select()">
+                      <v-list-item-icon>
+                        <v-icon>mdi-plus</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Add new event</v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item
+                      v-for="(entry,n) in diary.data.entries.slice(0).reverse()"
+                      :key="[entry.event,entry.timestamp,!!entry.comment,n].join(' ')"
+                      @click="editor_select(entry,diary.data.entries.length-n-1)"
+                      >
+                      <v-list-item-icon>
+                        <v-icon v-if="editor_dialog_options[entry.event]">{{editor_dialog_options[entry.event].icon}}</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>{{luxon.DateTime.fromMillis(entry.timestamp).toLocaleString(luxon.DateTime.DATETIME_MED)}}</v-list-item-title>
+                      </v-list-item-content>
+                      <v-list-item-icon v-if="entry.comment">
+                        <v-icon>mdi-comment-outline</v-icon>
+                      </v-list-item-icon>
+                    </v-list-item>
+                  </v-list>
+                </v-tab-item>
+
+                <!-- "Manage your data" menu -->
+                <v-tab-item>
+                  <v-toolbar flat>
+                    <v-btn icon @click.stop="reset_tab">
+                      <v-icon>mdi-arrow-left</v-icon>
+                    </v-btn>
+                    <v-toolbar-title>Manage your data</v-toolbar-title>
+                  </v-toolbar>
+
+
+                  <v-dialog
+                    v-model="restore_dialog"
+                    max-width="600px"
+                    >
+                    <v-card>
+                      <v-card-title>
+                        <span class="headline">Add or replace?</span>
+                      </v-card-title>
+                      <v-card-text>
+                        <p>Your current diary contains {{diary.data.entries.length}} entries.</p>
+                        <p>The new diary contains {{restore_diary.data.entries.length}} entries.</p>
+                        <v-radio-group v-model="restore_action">
+                          <v-radio value="replace" label="Replace my current diary with the new one"></v-radio>
+                          <v-radio value="merge" label="Merge the diaries together"></v-radio>
+                        </v-radio-group>
+                      </v-card-text>
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          text
+                          @click="restore_cancel"
+                          >
+                          Cancel
+                        </v-btn>
+                        <v-btn
+                          color="primary"
+                          @click="restore_ok"
+                          >
+                          OK
+                        </v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+
+                  <v-dialog
+                    v-model="restore_failed"
+                    max-width="600px"
+                    >
+                    <v-card>
+                      <v-card-title>
+                        <span class="headline">Could not restore</span>
+                      </v-card-title>
+                      <v-card-text>
+                        The file may be corrupt or in the wrong format.
+                      </v-card-text>
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          color="primary"
+                          @click="restore_failed = false"
+                          >
+                          OK
+                        </v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+
+                  <v-dialog
+                    v-model="restore_succeeded"
+                    max-width="600px"
+                    >
+                    <v-card>
+                      <v-card-title>
+                        <span class="headline">Diary restored</span>
+                      </v-card-title>
+                      <v-card-text>
+                        Your diary now contains {{diary.data.entries.length}} entries.
+                      </v-card-text>
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          color="primary"
+                          @click="restore_succeeded = false"
+                          >
+                          OK
+                        </v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+
+                  <v-list v-if="tab==2">
+                    <v-list-item
+                      :download="download_filename+'.sleep-diary'"
+                      :href="download_backup"
+                      >
+                      <v-list-item-icon>
+                        <v-icon>mdi-download</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Download a backup</v-list-item-title>
+                        <v-list-item-subtitle>Can be used with your own programs</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <input
+                      ref="restore_input"
+                      class="d-none"
+                      type="file"
+                      accept=".sleep-diary"
+                      @change="restore_available"
+                      >
+                    <v-list-item @click="$refs.restore_input.click()">
+                      <v-list-item-icon>
+                        <v-icon>mdi-upload</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Restore a previous backup</v-list-item-title>
+                        <v-list-item-subtitle>Replace or add to your current data</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item
+                      :download="download_filename+'.diary.csv'"
+                      :href="download_diary"
+                      >
+                      <v-list-item-icon>
+                        <v-icon>mdi-file-excel</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Download diary as CSV</v-list-item-title>
+                        <v-list-item-subtitle>Raw event data, works in Excel</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item
+                      :download="download_filename+'.calendar.csv'"
+                      :href="download_calendar"
+                      >
+                      <v-list-item-icon>
+                        <v-icon>mdi-file-excel-outline</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title>Download calendar as CSV</v-list-item-title>
+                        <v-list-item-subtitle>Sleep/wake times, works in Excel</v-list-item-subtitle>
+                      </v-list-item-content>
+                    </v-list-item>
+                  </v-list>
+                </v-tab-item>
+
+                <v-tab-item>
+                  <v-toolbar flat>
+                    <v-btn icon @click.stop="reset_tab">
+                      <v-icon>mdi-arrow-left</v-icon>
+                    </v-btn>
+                    <v-toolbar-title>About</v-toolbar-title>
+                  </v-toolbar>
+                  <v-btn style="width:80%;margin:8px 5%" href="README">
+                    <v-icon>mdi-web</v-icon>
+                    Home page
+                  </v-btn>
+                  <h2>Menu for accessing sleep diary tools</h2>
+                  <p style="white-space: pre-wrap">
+Copyright (C) 2020  Andrew Sayers (andrew-github.com@pileofstuff.org)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, version 3 of the
+License
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+</p>
+                </v-tab-item>
+
+              </v-tabs-items>
+
+            </v-tabs>
+
+          </v-container>
+        </v-main>
+      </v-app>
+    </div>
+
+
+    <!-- Load Sleep Diary Toolkit -->
+    <script src="../../sleep-diary-toolkit.js"></script>
+
+    <!-- Replace the following with your JavaScript -->
+    <script src="//cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+    <script src="luxon.min.js"></script>
+    <script src="index.js"></script>
+
+
+  </body>
+</html>
