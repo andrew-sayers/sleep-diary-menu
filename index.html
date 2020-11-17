@@ -514,15 +514,15 @@
                       </v-list-item-content>
                     </v-list-item>
                     <v-list-item
-                      v-for="(entry,n) in diary.data.entries.slice(0).reverse()"
-                      :key="[entry.event,entry.timestamp,!!entry.comment,n].join(' ')"
-                      @click="editor_select(entry,diary.data.entries.length-n-1)"
+                      v-for="entry in editor_entries"
+                      :key="entry.key"
+                      @click="editor_select(entry)"
                       >
                       <v-list-item-icon>
-                        <v-icon v-if="editor_dialog_options[entry.event]">{{editor_dialog_options[entry.event].icon}}</v-icon>
+                        <v-icon v-if="entry.icon">{{entry.icon}}</v-icon>
                       </v-list-item-icon>
                       <v-list-item-content>
-                        <v-list-item-title>{{luxon.DateTime.fromMillis(entry.timestamp).toLocaleString(luxon.DateTime.DATETIME_MED)}}</v-list-item-title>
+                        <v-list-item-title>{{entry.timestamp.toLocaleString(luxon.DateTime.DATETIME_MED)}}</v-list-item-title>
                       </v-list-item-content>
                       <v-list-item-icon v-if="entry.comment">
                         <v-icon>mdi-comment-outline</v-icon>
