@@ -289,8 +289,8 @@ new Vue({
         },
         restore_ok() {
             if ( this.restore_action == 'replace' ) {
-                new_diary.constructed_from_string = false;
-                diary = new_diary;
+                this.restore_diary.constructed_from_string = false;
+                diary = this.restore_diary;
                 this.reset_diary();
                 diary.save();
             } else {
