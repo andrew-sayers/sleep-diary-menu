@@ -102,6 +102,9 @@ new Vue({
         sleep_planning_date: (target_timestamp?luxon.DateTime.fromMillis(target_timestamp):time).toFormat('yyyy-MM-dd'),
         sleep_planning_time: (target_timestamp?luxon.DateTime.fromMillis(target_timestamp):time).toFormat('HH:mm'),
 
+        // "Debugging" menu:
+        debug_messages: [],
+
         // History management:
         return_to_tab_zero: 0,
 
@@ -406,6 +409,12 @@ new Vue({
             }
             this.return_to_tab_zero |= this.tab == 0;
         }
+
+        window.onerror = (message,source,lineno,colno) => {
+            this.debug_messages.push([message,source,lineno,colno]);
+            return false;
+        }
+
     },
 
 });
