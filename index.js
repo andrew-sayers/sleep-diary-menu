@@ -220,7 +220,7 @@ new Vue({
             this.editor_loading = 1;
             this.diary.splice_entries(
                 this.editor_dialog_n,
-                this.editor_dialog_n+1,
+                1,
                 [],
                 () => { // success
                     this.editor_loading = 0;
@@ -266,7 +266,7 @@ new Vue({
 
             this.diary.splice_entries(
                 this.editor_dialog_n,
-                this.editor_dialog_n+1,
+                1,
                 [entry],
                 () => { // success
                     this.editor_loading = 0;
@@ -316,7 +316,7 @@ new Vue({
             } else {
                 this.diary.splice_entries(
                     this.diary.data.entries.length,
-                    this.diary.data.entries.length,
+                    0,
                     this.restore_diary.data.entries
                 );
                 this.reset_diary();
