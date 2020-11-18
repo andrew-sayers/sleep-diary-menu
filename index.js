@@ -27,6 +27,7 @@ new Vue({
     data: {
 
         diary: diary,
+        analysis: analysis,
 
         // Main menu
         tab: 0,
@@ -173,7 +174,7 @@ new Vue({
         reset_diary() {
             time = this.diary.data.entries.length ? luxon.DateTime.fromMillis(this.diary.data.entries[this.diary.data.entries.length-1].timestamp) : luxon.DateTime.local();
             target_timestamp = this.diary.target_timestamp();
-            analysis = this.diary.analyse();
+            analysis = this.analysis = this.diary.analyse();
             this.day_length =
                 this.diary.data.preferredDayLength
                 ?luxon.Duration.fromMillis(this.diary.data.preferredDayLength).toFormat('hh:mm')
@@ -393,6 +394,7 @@ new Vue({
     },
 
     mounted() {
+        this.reset_diary();
         location.hash.replace( /^#tab=(\d+)/, (_,n) => this.tab=parseInt(n,10) );
         this.return_to_tab_zero = this.tab == 0;
         window.onpopstate = () => {
