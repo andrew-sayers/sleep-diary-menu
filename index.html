@@ -565,8 +565,8 @@
                         <span class="headline">Add or replace?</span>
                       </v-card-title>
                       <v-card-text>
-                        <p>Your current diary contains {{diary.data.entries.length}} entries.</p>
-                        <p>The new diary contains {{restore_diary.data.entries.length}} entries.</p>
+                        <p>Your current diary contains {{diary.data.entries.length}} {{diary.data.entries.length==1?'entry':'entries'}}.</p>
+                        <p>The new diary contains {{restore_diary.data.entries.length}} {{restore_diary.data.entries.length==1?'entry':'entries'}}.</p>
                         <v-radio-group v-model="restore_action">
                           <v-radio value="replace" label="Replace my current diary with the new one"></v-radio>
                           <v-radio value="merge" label="Merge the diaries together"></v-radio>
@@ -622,7 +622,7 @@
                         <span class="headline">Diary restored</span>
                       </v-card-title>
                       <v-card-text>
-                        Your diary now contains {{diary.data.entries.length}} entries.
+                        Your diary now contains {{diary.data.entries.length}} {{diary.data.entries.length==1?'entry':'entries'}}.
                       </v-card-text>
                       <v-card-actions>
                         <v-spacer></v-spacer>
