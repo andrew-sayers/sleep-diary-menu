@@ -90,6 +90,7 @@ new Vue({
         server_active_on_cancel: 0,
 
         target_active: !!target_timestamp,
+        target_timestamp: target_timestamp,
         sleep_planning_date_menu: false,
         sleep_planning_time_menu: false,
         sleep_planning_day_length:
@@ -176,7 +177,8 @@ new Vue({
 
         reset_diary() {
             time = this.diary.data.entries.length ? luxon.DateTime.fromMillis(this.diary.data.entries[this.diary.data.entries.length-1].timestamp) : luxon.DateTime.local();
-            target_timestamp = this.diary.target_timestamp();
+            target_timestamp = this.target_timestamp = this.diary.target_timestamp();
+            this.target_active = !!target_timestamp;
             analysis = this.analysis = this.diary.analyse();
             this.day_length =
                 this.diary.data.preferredDayLength
