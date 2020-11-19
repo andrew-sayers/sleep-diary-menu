@@ -224,7 +224,7 @@ new Vue({
         // "Editor" menu:
         editor_select(entry) {
             this.editor_dialog = true;
-            this.editor_dialog_entry = entry ? entry.original : null;
+            this.editor_dialog_entry = entry ? this.diary.data.entries[entry.n] : 0;
             this.editor_dialog_n = this.diary.data.entries.length;
             this.editor_dialog_event = 0;
             this.editor_dialog_comment = '';
