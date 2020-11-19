@@ -162,12 +162,12 @@ new Vue({
         // Sleep calendar:
 
         calendar_events() {
-            return this.diary.analyse().sleeps.map( sleep => {return {
+            return this.diary.analyse().sleeps.map( sleep => ({
                 name: 'Asleep',
                 start: new Date(sleep.estimated_sleep_time),
                 end  : new Date(sleep.estimated_wake_time),
                 timed: true,
-            }});
+            }));
         },
 
     },
@@ -330,12 +330,12 @@ new Vue({
         // Calendar
 
         calendar_change({ start, end }) {
-            return this.diary.analyse().sleeps.map( sleep => {return {
+            return this.diary.analyse().sleeps.map( sleep => ({
                 name: 'Asleep',
                 start: new Date(sleep.estimated_sleep_time),
                 end  : new Date(sleep.estimated_wake_time),
                 timed: true,
-            }});
+            }));
         },
 
         // Settings
