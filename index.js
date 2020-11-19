@@ -51,6 +51,12 @@ new Vue({
         tab: 0,
 
         // "Editor" menu
+        editor_headers: [
+            { text: 'Event', value: 'event', },
+            { text: 'Time' , value: 'timestamp', },
+            { text: 'Related' , value: 'related', },
+            { text: '' , value: 'comment', },
+        ],
         editor_dialog: false,
         editor_loading: 0,
         editor_error: false,
@@ -168,7 +174,7 @@ new Vue({
         // "Editor" menu:
         editor_entries() {
             if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
-            return new Diary().data.entries.slice(0).reverse().map( (entry,n) => {
+            return new Diary().data.entries.slice(0).map( (entry,n) => {
                 return {
                     event: entry.event,
                     icon: this.editor_dialog_options[entry.event] ? this.editor_dialog_options[entry.event].icon : undefined,
@@ -176,9 +182,9 @@ new Vue({
                     related: entry.related,
                     comment: entry.comment,
                     key: [entry.event,entry.timestamp,!!entry.comment,n].join(' '),
-                    original: entry,
+                    n: n,
                 }
-            });
+            }).reverse();
         },
 
         // Sleep calendar:
@@ -228,9 +234,7 @@ new Vue({
             this.editor_dialog_related_date = luxon.DateTime.local().toFormat('yyyy-MM-dd');
             this.editor_dialog_related_time = luxon.DateTime.local().toFormat('HH:mm');
             if ( entry ) {
-                this.diary.data.entries.forEach( (e,n) => {
-                    if ( e == entry.original ) this.editor_dialog_n = n;
-                });
+                this.editor_dialog_n = entry.n;
                 this.editor_dialog_event = entry.event;
                 this.editor_dialog_comment = entry.comment;
                 this.editor_dialog_date = entry.timestamp.toFormat('yyyy-MM-dd');

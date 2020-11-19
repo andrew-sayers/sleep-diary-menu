@@ -519,31 +519,36 @@
                     </v-card>
                   </v-dialog>
 
-                  <v-list>
-                    <v-list-item @click="editor_select()">
-                      <v-list-item-icon>
-                        <v-icon>mdi-plus</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-content>
-                        <v-list-item-title>Add new event</v-list-item-title>
-                      </v-list-item-content>
-                    </v-list-item>
-                    <v-list-item
-                      v-for="entry in editor_entries"
-                      :key="entry.key"
-                      @click="editor_select(entry)"
-                      >
-                      <v-list-item-icon>
-                        <v-icon v-if="entry.icon">{{entry.icon}}</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-content>
-                        <v-list-item-title>{{entry.timestamp.toLocaleString(luxon.DateTime.DATETIME_MED)}}</v-list-item-title>
-                      </v-list-item-content>
-                      <v-list-item-icon v-if="entry.comment">
-                        <v-icon>mdi-comment-outline</v-icon>
-                      </v-list-item-icon>
-                    </v-list-item>
-                  </v-list>
+                  <v-data-table
+                    dense
+                    :headers="editor_headers"
+                    :items="editor_entries"
+                    item-key="key"
+                    >
+
+                    <template v-slot:item="{ item }">
+                      <tr @click="editor_select(item)" style="cursor:pointer">
+                        <td class="text-start"><v-icon>{{item.icon}}</v-icon></td>
+                        <td class="text-start">{{item.timestamp.toLocaleString(luxon.DateTime.DATETIME_MED)}}</td>
+                        <td class="text-start">
+                          <template v-if="item.event == event_string_to_id.RETARGET">
+                            <template v-if="item.related">
+                              {{luxon.DateTime.fromMillis(item.related).toLocaleString(luxon.DateTime.DATETIME_MED)}}
+                            </template>
+                            <template v-else>
+                              (cancelled)
+                            </template>
+                          </template>
+                        </td>
+                        <td class="text-start"><v-icon v-if="item.comment">mdi-comment-outline</v-icon></td>
+                      </tr>
+                    </template>
+                  </v-data-table>
+                  <div style="margin-top: -46px">
+                    <v-btn icon @click="editor_select()"><v-icon>mdi-plus</v-icon></v-btn>
+                    <v-btn icon :href="download_diary"><v-icon>mdi-download</v-icon></v-btn>
+                  </div>
+
                 </v-tab-item>
 
                 <!-- "Manage your data" menu -->
