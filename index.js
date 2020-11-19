@@ -5,6 +5,23 @@
  * @license AGPLv3
  */
 
+/*
+ * VUE PERFORMANCE NOTE
+ *
+ * Vue.js modifies variables so it can detect when they're modified.
+ * This makes Vue code much quicker to write, but also makes complex
+ * operations on diaries several hundred times slower.
+ *
+ * There are several pieces of code like the following in this file:
+ *
+ *     if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
+ *     var diary = new Diary();
+ *     ... operations on diary instead of this.diary ...
+ *
+ * The first line tells Vue that this code reacts to changes in
+ * this.diary, the second line loads a new instance without Vue stuff.
+ */
+
 "use strict"
 
 browser_utils.fix_browser_issues();
@@ -14,8 +31,9 @@ document.body.removeAttribute('style');
 var diary = new Diary(),
     time = diary.data.entries.length ? luxon.DateTime.fromMillis(diary.data.entries[diary.data.entries.length-1].timestamp) : luxon.DateTime.local(),
     target_timestamp = diary.target_timestamp(),
-    analysis = diary.analyse()
-
+    analysis = diary.analyse(),
+    event_string_to_id = diary.event_string_to_id,
+    event_id_to_string = diary.event_id_to_string
 ;
 
 new Vue({
@@ -50,7 +68,7 @@ new Vue({
             { value: 8, icon: 'mdi-shower', text: 'Bath/shower' },
             { value: 9, icon: 'mdi-calendar-edit', text: 'Changed the target time' },
             { value: 10, icon: 'mdi-comment-outline', text: 'Other' },
-        ].concat( diary.event_id_to_string.slice(11).map( (key,n) => {
+        ].concat( event_id_to_string.slice(11).map( (key,n) => {
             return { value: 11+n, text: key.toLowerCase() }
         })),
         editor_dialog_entry: null,
@@ -115,15 +133,17 @@ new Vue({
 
         // "Manage your data" menu
         download_backup() {
-            return 'data:text/plain,' + this.diary.serialise();
+            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
+            return 'data:text/plain,' + new Diary().serialise();
         },
         download_diary() {
+            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
             return 'data:text/csv;base64,' + btoa(
                 "time,event,related time,comment\n" +
-                    this.diary.data.entries.map(
+                    new Diary().data.entries.map(
                         entry => [
                             luxon.DateTime.fromMillis(entry.timestamp).toISO(),
-                            this.diary.event_id_to_string[entry.event],
+                            event_id_to_string[entry.event],
                             entry.related?luxon.DateTime.fromMillis(entry.related).toISO():'',
                             entry.comment||''
                         ].join(',') + "\n"
@@ -131,9 +151,10 @@ new Vue({
             );
         },
         download_calendar() {
+            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
             return 'data:text/csv;base64,' + btoa(
                 "Measured sleep time,Measured wake time,Estimated sleep time,Estimated wake time\n" +
-                    this.diary.analyse().sleeps.map(
+                    new Diary().analyse().sleeps.map(
                         sleep => [
                             sleep.sleep_time?luxon.DateTime.fromMillis(sleep.sleep_time).toISO():'',
                             sleep.wake_time ?luxon.DateTime.fromMillis(sleep.wake_time ).toISO():'',
@@ -142,12 +163,12 @@ new Vue({
                         ].join(',') + "\n"
                     ).join("")
             );
-
         },
 
         // "Editor" menu:
         editor_entries() {
-            return this.diary.data.entries.slice(0).reverse().map( (entry,n) => {
+            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
+            return new Diary().data.entries.slice(0).reverse().map( (entry,n) => {
                 return {
                     event: entry.event,
                     icon: this.editor_dialog_options[entry.event] ? this.editor_dialog_options[entry.event].icon : undefined,
@@ -163,7 +184,8 @@ new Vue({
         // Sleep calendar:
 
         calendar_events() {
-            return this.diary.analyse().sleeps.map( sleep => ({
+            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
+            return new Diary().analyse().sleeps.map( sleep => ({
                 name: 'Asleep',
                 start: new Date(sleep.estimated_sleep_time),
                 end  : new Date(sleep.estimated_wake_time),
@@ -213,7 +235,7 @@ new Vue({
                 this.editor_dialog_comment = entry.comment;
                 this.editor_dialog_date = entry.timestamp.toFormat('yyyy-MM-dd');
                 this.editor_dialog_time = entry.timestamp.toFormat('HH:mm');
-                this.editor_dialog_has_related = entry.event == this.diary.event_string_to_id.RETARGET && entry.related;
+                this.editor_dialog_has_related = entry.event == event_string_to_id.RETARGET && entry.related;
                 if ( this.editor_dialog_has_related ) {
                     this.editor_dialog_related_date = luxon.DateTime.fromMillis(entry.related).toFormat('yyyy-MM-dd');
                     this.editor_dialog_related_time = luxon.DateTime.fromMillis(entry.related).toFormat('HH:mm');
