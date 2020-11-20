@@ -323,10 +323,9 @@ new Vue({
                             this.restore_diary = new_diary;
                         }
                     } else {
-                        new_diary.constructed_from_string = false;
                         diary = this.diary = new_diary;
                         this.reset_diary();
-                        this.diary.save();
+                        this.diary.save(true);
                         this.restore_succeeded = true;
                     }
                 } catch (e) {
@@ -340,10 +339,9 @@ new Vue({
         },
         restore_ok() {
             if ( this.restore_action == 'replace' ) {
-                this.restore_diary.constructed_from_string = false;
                 diary = this.diary = this.restore_diary;
                 this.reset_diary();
-                this.diary.save();
+                this.diary.save(true);
             } else {
                 this.diary.splice_entries(
                     this.diary.data.entries.length,
