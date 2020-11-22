@@ -14,7 +14,7 @@
  *
  * There are several pieces of code like the following in this file:
  *
- *     if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
+ *     if ( !this.diary.entries() ) return; // see VUE PERFORMANCE NOTE, above
  *     var diary = new Diary();
  *     ... operations on diary instead of this.diary ...
  *
@@ -29,9 +29,9 @@ browser_utils.fix_browser_issues();
 document.body.removeAttribute('style');
 
 var diary = new Diary(),
-    time = diary.data.entries.length ? luxon.DateTime.fromMillis(diary.data.entries[diary.data.entries.length-1].timestamp) : luxon.DateTime.local(),
+    time = diary.entries().length ? luxon.DateTime.fromMillis(diary.entries()[diary.entries().length-1].timestamp) : luxon.DateTime.local(),
     target_timestamp = diary.target_timestamp(),
-    analysis = diary.analyse(),
+    sleep_wake_periods = diary.sleep_wake_periods(),
     event_string_to_id = diary.event_string_to_id,
     event_id_to_string = diary.event_id_to_string
 ;
@@ -45,7 +45,7 @@ new Vue({
     data: {
 
         diary: diary,
-        analysis: analysis,
+        sleep_wake_periods: sleep_wake_periods,
 
         // Main menu
         tab: 0,
@@ -95,7 +95,7 @@ new Vue({
         restore_dialog: false,
         restore_failed: false,
         restore_succeeded: false,
-        restore_diary: { data: { entries: [] } },
+        restore_diary: { entries: ()=>[] },
         restore_action: 'replace',
 
         // Sleep calendar:
@@ -109,20 +109,21 @@ new Vue({
         sleep_planning: false,
         sleep_planning_dialog: false,
 
-        server_active: !!diary.data.server,
-        server_url: diary.data.server||'',
+        server_active: !!diary.server(),
+        server_url: diary.server()||'',
         server_active_on_cancel: 0,
+        server_start: diary.server_entries_offset() ? 'latest' : 'start',
 
         target_active: !!target_timestamp,
         target_timestamp: target_timestamp,
         sleep_planning_date_menu: false,
         sleep_planning_time_menu: false,
         sleep_planning_day_length:
-        diary.data.preferredDayLength
-            ?luxon.Duration.fromMillis(diary.data.preferredDayLength).toFormat('hh:mm')
-            :analysis.day_duration_stats.trimmed_mean
-            ?luxon.Duration.fromMillis(analysis.day_duration_stats.trimmed_mean).toFormat('hh:mm')
-            :'25:00'
+          luxon.Duration.fromMillis(
+              diary.preferred_day_length() ||
+              sleep_wake_periods.day_summary.recommended_average ||
+              25*60*60*1000
+          ).toFormat('hh:mm')
         ,
         sleep_planning_date: (target_timestamp?luxon.DateTime.fromMillis(target_timestamp):time).toFormat('yyyy-MM-dd'),
         sleep_planning_time: (target_timestamp?luxon.DateTime.fromMillis(target_timestamp):time).toFormat('HH:mm'),
@@ -139,42 +140,33 @@ new Vue({
 
         // "Manage your data" menu
         download_backup() {
-            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
+            if ( !this.diary.entries() ) return; // see VUE PERFORMANCE NOTE, above
             return 'data:text/plain,' + new Diary().serialise();
         },
         download_diary() {
-            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
-            return 'data:text/csv;base64,' + btoa(
-                "time,event,related time,comment\n" +
-                    new Diary().data.entries.map(
-                        entry => [
-                            luxon.DateTime.fromMillis(entry.timestamp).toISO(),
-                            event_id_to_string[entry.event],
-                            entry.related?luxon.DateTime.fromMillis(entry.related).toISO():'',
-                            entry.comment||''
-                        ].join(',') + "\n"
-                    ).join("")
-            );
+            if ( !this.diary.entries() ) return; // see VUE PERFORMANCE NOTE, above
+            var ret = new Diary().toColumns();
+            ret.slice(1).forEach( row => {
+                row[0] = luxon.DateTime.fromMillis(row[0]).toISO();
+                if ( row[2] ) row[2] = luxon.DateTime.fromMillis(row[2]).toISO();
+            });
+            return 'data:text/csv;base64,' + btoa(ret.map( row => row.join(',')+"\n" ).join(''));
         },
         download_calendar() {
-            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
-            return 'data:text/csv;base64,' + btoa(
-                "Measured sleep time,Measured wake time,Estimated sleep time,Estimated wake time\n" +
-                    new Diary().analyse().sleeps.map(
-                        sleep => [
-                            sleep.sleep_time?luxon.DateTime.fromMillis(sleep.sleep_time).toISO():'',
-                            sleep.wake_time ?luxon.DateTime.fromMillis(sleep.wake_time ).toISO():'',
-                            luxon.DateTime.fromMillis(sleep.estimated_sleep_time).toISO(),
-                            luxon.DateTime.fromMillis(sleep.estimated_wake_time ).toISO(),
-                        ].join(',') + "\n"
-                    ).join("")
-            );
+            if ( !this.diary.entries() ) return; // see VUE PERFORMANCE NOTE, above
+            var ret = new Diary().toColumnsCalendar();
+            ret.slice(1).forEach( row => {
+                for ( var n=1; n!=3; ++n ) {
+                    if ( row[n] ) row[n] = luxon.DateTime.fromMillis(row[n]).toISO();
+                }
+            });
+            return 'data:text/csv;base64,' + btoa(ret.map( row => row.join(',')+"\n" ).join(''));
         },
 
         // "Editor" menu:
         editor_entries() {
-            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
-            return new Diary().data.entries.slice(0).map( (entry,n) => {
+            if ( !this.diary.entries() ) return; // see VUE PERFORMANCE NOTE, above
+            return new Diary().entries().slice(0).map( (entry,n) => {
                 return {
                     event: entry.event,
                     icon: this.editor_dialog_options[entry.event] ? this.editor_dialog_options[entry.event].icon : undefined,
@@ -190,13 +182,15 @@ new Vue({
         // Sleep calendar:
 
         calendar_events() {
-            if ( !this.diary.data.entries ) return; // see VUE PERFORMANCE NOTE, above
-            return new Diary().analyse().sleeps.map( sleep => ({
-                name: 'Asleep',
-                start: new Date(sleep.estimated_sleep_time),
-                end  : new Date(sleep.estimated_wake_time),
-                timed: true,
-            }));
+            if ( !this.diary.entries() ) return; // see VUE PERFORMANCE NOTE, above
+            return new Diary().sleep_wake_periods().records
+                .filter( r => r.status == 'asleep' && r.end_time )
+                .map( r => ({
+                    name: 'Asleep',
+                    start: new Date(r.start_time),
+                    end  : new Date(r.end_time),
+                    timed: true,
+                }));
         },
 
     },
@@ -204,28 +198,28 @@ new Vue({
     methods: {
 
         reset_diary() {
-            time = this.diary.data.entries.length ? luxon.DateTime.fromMillis(this.diary.data.entries[this.diary.data.entries.length-1].timestamp) : luxon.DateTime.local();
+            time = this.diary.entries().length ? luxon.DateTime.fromMillis(this.diary.entries()[this.diary.entries().length-1].timestamp) : luxon.DateTime.local();
             target_timestamp = this.target_timestamp = this.diary.target_timestamp();
             this.target_active = !!target_timestamp;
-            analysis = this.analysis = this.diary.analyse();
+            sleep_wake_periods = this.sleep_wake_periods = diary.sleep_wake_periods(),
             this.day_length =
-                this.diary.data.preferredDayLength
-                ?luxon.Duration.fromMillis(this.diary.data.preferredDayLength).toFormat('hh:mm')
-                :analysis.day_duration_stats.trimmed_mean
-                ?luxon.Duration.fromMillis(analysis.day_duration_stats.trimmed_mean).toFormat('hh:mm')
-                :'25:00'
+                luxon.Duration.fromMillis(
+                    diary.preferred_day_length() ||
+                    sleep_wake_periods.day_summary.recommended_average ||
+                    25*60*60*1000
+                ).toFormat('hh:mm')
             ;
             this.target_date = (target_timestamp?luxon.DateTime.fromMillis(target_timestamp):time).toFormat('yyyy-MM-dd');
             this.target_time = (target_timestamp?luxon.DateTime.fromMillis(target_timestamp):time).toFormat('HH:mm');
-            this.server_active = !!this.diary.data.server;
-            this.server_url = this.diary.data.server||'';
+            this.server_active = !!this.diary.server();
+            this.server_url = this.diary.server()||'';
         },
 
         // "Editor" menu:
         editor_select(entry) {
             this.editor_dialog = true;
-            this.editor_dialog_entry = entry ? this.diary.data.entries[entry.n] : 0;
-            this.editor_dialog_n = this.diary.data.entries.length;
+            this.editor_dialog_entry = entry ? this.diary.entries()[entry.n] : 0;
+            this.editor_dialog_n = this.diary.entries().length;
             this.editor_dialog_event = 0;
             this.editor_dialog_comment = '';
             this.editor_dialog_date = luxon.DateTime.local().toFormat('yyyy-MM-dd');
@@ -317,11 +311,9 @@ new Vue({
             reader.onload = () => {
                 try {
                     var new_diary = new Diary(reader.result);
-                    if ( this.diary && this.diary.data && this.diary.data.entries.length ) {
-                        if ( new_diary && new_diary.data ) {
-                            this.restore_dialog = true;
-                            this.restore_diary = new_diary;
-                        }
+                    if ( this.diary && this.diary.entries().length ) {
+                        this.restore_dialog = true;
+                        this.restore_diary = new_diary;
                     } else {
                         diary = this.diary = new_diary;
                         this.reset_diary();
@@ -344,9 +336,9 @@ new Vue({
                 this.diary.save(true);
             } else {
                 this.diary.splice_entries(
-                    this.diary.data.entries.length,
+                    this.diary.entries().length,
                     0,
-                    this.restore_diary.data.entries
+                    this.restore_diary.entries()
                 );
                 this.reset_diary();
             }
@@ -355,13 +347,15 @@ new Vue({
 
         // Calendar
 
-        calendar_change({ start, end }) {
-            return this.diary.analyse().sleeps.map( sleep => ({
-                name: 'Asleep',
-                start: new Date(sleep.estimated_sleep_time),
-                end  : new Date(sleep.estimated_wake_time),
-                timed: true,
-            }));
+        calendar_change() {
+            return new Diary().sleep_wake_periods().records
+                .filter( r => r.status == 'asleep' && r.end_time )
+                .map( r => ({
+                    name: 'Asleep',
+                    start: new Date(r.start_time),
+                    end  : new Date(r.end_time),
+                    timed: true,
+                }));
         },
 
         // Settings
@@ -374,7 +368,7 @@ new Vue({
             this.online_backup_dialog = this.server_active && !this.server_url;
             this.server_active_on_cancel = !this.server_active;
             if ( !this.online_backup_dialog ) {
-                this.diary.server( this.server_active ? this.server_url : '' );
+                this.diary.server( this.server_active ? this.server_url : '', this.server_start == 'start' );
             }
         },
         online_backup_cancel() {
@@ -384,7 +378,7 @@ new Vue({
         online_backup_ok() {
             this.server_active = !!this.server_url;
             this.online_backup_dialog = false;
-            this.diary.server( this.server_url );
+            this.diary.server( this.server_url, this.server_start == 'start' );
         },
 
         sleep_planning_switch() {
@@ -402,7 +396,7 @@ new Vue({
                 preferred_day_length = (preferred_day_values[0]*60+preferred_day_values[1])*60000
             ;
             this.target_active = true;
-            this.diary.set_preferred_day_length(preferred_day_length);
+            this.diary.preferred_day_length(preferred_day_length);
             this.diary.add_entry('RETARGET',new Date().getTime(),target);
             this.sleep_planning_dialog = false;
         },

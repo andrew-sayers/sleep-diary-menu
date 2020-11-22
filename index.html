@@ -125,6 +125,11 @@
                             placeholder="https://www.example.com/?diary="
                             v-model="server_url"
                             ></v-text-field>
+                          <v-radio-group v-model="server_start">
+                            <v-radio value="latest" label="Only send new events to the server"></v-radio>
+                            <v-radio value="start" label="Send my complete history to the server"></v-radio>
+                          </v-radio-group>
+
                           <v-alert
                             class="mt-2"
                             dense
@@ -570,8 +575,8 @@
                         <span class="headline">Add or replace?</span>
                       </v-card-title>
                       <v-card-text>
-                        <p>Your current diary contains {{diary.data.entries.length}} {{diary.data.entries.length==1?'entry':'entries'}}.</p>
-                        <p>The new diary contains {{restore_diary.data.entries.length}} {{restore_diary.data.entries.length==1?'entry':'entries'}}.</p>
+                        <p>Your current diary contains {{diary.entries().length}} {{diary.entries().length==1?'entry':'entries'}}.</p>
+                        <p>The new diary contains {{restore_diary.entries().length}} {{restore_diary.entries().length==1?'entry':'entries'}}.</p>
                         <v-radio-group v-model="restore_action">
                           <v-radio value="replace" label="Replace my current diary with the new one"></v-radio>
                           <v-radio value="merge" label="Merge the diaries together"></v-radio>
@@ -627,7 +632,7 @@
                         <span class="headline">Diary restored</span>
                       </v-card-title>
                       <v-card-text>
-                        Your diary now contains {{diary.data.entries.length}} {{diary.data.entries.length==1?'entry':'entries'}}.
+                        Your diary now contains {{diary.entries().length}} {{diary.entries().length==1?'entry':'entries'}}.
                       </v-card-text>
                       <v-card-actions>
                         <v-spacer></v-spacer>
