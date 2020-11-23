@@ -106,6 +106,7 @@ new Vue({
 
         online_backup: false,
         online_backup_dialog: false,
+        online_backup_failed: false,
         sleep_planning: false,
         sleep_planning_dialog: false,
 
@@ -368,7 +369,12 @@ new Vue({
             this.online_backup_dialog = this.server_active && !this.server_url;
             this.server_active_on_cancel = !this.server_active;
             if ( !this.online_backup_dialog ) {
-                this.diary.server( this.server_active ? this.server_url : '', this.server_start == 'start' );
+                this.diary.server(
+                    this.server_active ? this.server_url : '',
+                    this.server_start == 'start',
+                    0,
+                    () => this.online_backup_failed = true
+                );
             }
         },
         online_backup_cancel() {
@@ -378,7 +384,12 @@ new Vue({
         online_backup_ok() {
             this.server_active = !!this.server_url;
             this.online_backup_dialog = false;
-            this.diary.server( this.server_url, this.server_start == 'start' );
+            this.diary.server(
+                this.server_url,
+                this.server_start == 'start',
+                0,
+                () => this.online_backup_failed = true
+            );
         },
 
         sleep_planning_switch() {

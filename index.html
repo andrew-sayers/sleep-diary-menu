@@ -157,6 +157,29 @@
                       </v-card>
                     </v-dialog>
 
+                    <v-dialog
+                      v-model="online_backup_failed"
+                      max-width="600px"
+                      >
+                      <v-card>
+                        <v-card-title>
+                          <span class="headline">Could not connect to server</span>
+                        </v-card-title>
+                        <v-card-text>
+                          Could not connect to the server at <a :href="server_url">{{server_url}}</a>.  Please make sure the address is correct, and that you have configured <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">Cross-Origin Resource Sharing</a> for the address.
+                        </v-card-text>
+                        <v-card-actions>
+                          <v-spacer></v-spacer>
+                          <v-btn
+                            color="primary"
+                            @click="online_backup_failed=false"
+                            >
+                            OK
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+
                     <v-list-item @click="online_backup_click">
                       <v-list-item-icon>
                         <v-icon>mdi-cloud-upload-outline</v-icon>
