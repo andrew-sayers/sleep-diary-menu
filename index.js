@@ -55,7 +55,7 @@ new Vue({
             { text: 'Event', value: 'event', },
             { text: 'Time' , value: 'timestamp', },
             { text: 'Related' , value: 'related', },
-            { text: '' , value: 'comment', },
+            { text: '' , value: 'comment', sortable: false },
         ],
         editor_dialog: false,
         editor_loading: 0,

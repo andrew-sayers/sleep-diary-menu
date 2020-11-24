@@ -12,6 +12,7 @@
     <link href="//cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="//cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <link rel="stylesheet" type="text/css" href="index.css">
     <title>Sleep diary - menu</title>
   </head>
   <body style="background:black;opacity:0">
@@ -556,7 +557,7 @@
 
                     <template v-slot:item="{ item }">
                       <tr @click="editor_select(item)" style="cursor:pointer">
-                        <td class="text-start"><v-icon>{{item.icon}}</v-icon></td>
+                        <td class="text-start" style="width:80px"><v-icon>{{item.icon}}</v-icon></td>
                         <td class="text-start">{{item.timestamp.toLocaleString(luxon.DateTime.DATETIME_MED)}}</td>
                         <td class="text-start">
                           <template v-if="item.event == event_string_to_id.RETARGET">
@@ -572,9 +573,8 @@
                       </tr>
                     </template>
                   </v-data-table>
-                  <div style="margin-top: -46px">
+                  <div style="margin-top: -46px; margin-left: 2px">
                     <v-btn icon @click="editor_select()"><v-icon>mdi-plus</v-icon></v-btn>
-                    <v-btn icon :href="download_diary"><v-icon>mdi-download</v-icon></v-btn>
                   </div>
 
                 </v-tab-item>

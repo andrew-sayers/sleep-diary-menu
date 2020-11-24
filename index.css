@@ -1,0 +1,14 @@
+/*
+ * The mobile version of the editor has a "sort by" field that assumes
+ * the first column is quite wide.  That's not true in our case,
+ * and this ugly hack is the only workaround I could find.
+ */
+.v-data-table-header-mobile__wrapper {
+    position: relative;
+    height: 48px;
+}
+.v-data-table-header-mobile__wrapper > div {
+    position: absolute;
+    width: 90vw;
+    max-width: none;
+}
